@@ -12,6 +12,9 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.parse.Parse;
+import com.parse.ParseException;
+import com.parse.ParseObject;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, LocationListener{
 
@@ -20,6 +23,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private ShakeDetector mShakeDetector;
+
+    ParseObject locationObject;
+
+    boolean shaken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +50,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 .addConnectionCallbacks(this).addApi(LocationServices.API)
                 .build();
         mGoogleApiClient.connect();
+
+        shaken = false;
+
+        // Enable Local Datastore.
+        Parse.enableLocalDatastore(this);
+        Parse.initialize(this, "demo", "demo");
+
+        locationObject = new ParseObject("TestObject");
     }
 
     @Override
@@ -58,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     public void handleShakeEvent(int count) {
-
+        shaken = true;
     }
 
     @Override
@@ -75,15 +90,24 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private LocationRequest createLocationRequest() {
         LocationRequest mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(10000);
-        mLocationRequest.setFastestInterval(5000);
+        mLocationRequest.setInterval(5000);
+        mLocationRequest.setFastestInterval(1000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         return mLocationRequest;
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        Log.d("Location Update", "Latitude: " + location.getLatitude() +
-                " Longitude: " + location.getLongitude());
+
+        double lat = location.getLatitude();
+        double lon = location.getLongitude();
+
+        //Log.d("Location Update", "Latitude: " + lat + " Longitude: " + lon);
+        Log.d("Shaken:", ""+shaken);
+        if (!shaken) {
+            locationObject.put("lat", lat);
+            locationObject.put("lon", lon);
+            locationObject.saveInBackground();
+        }
     }
 }
