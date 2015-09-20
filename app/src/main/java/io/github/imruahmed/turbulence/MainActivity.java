@@ -1,6 +1,7 @@
 package io.github.imruahmed.turbulence;
 
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.Location;
@@ -8,6 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.firebase.client.Firebase;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -24,7 +26,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private Sensor mAccelerometer;
     private ShakeDetector mShakeDetector;
 
+
     ParseObject locationObject;
+    Firebase myFirebaseRef;
 
     boolean shaken;
 
@@ -32,6 +36,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Intent intent = getIntent();
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager
@@ -53,11 +59,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         shaken = false;
 
-        // Enable Local Datastore.
-        Parse.enableLocalDatastore(this);
-        Parse.initialize(this, "demo", "demo");
 
-        locationObject = new ParseObject("TestObject");
+        Firebase.setAndroidContext(this);
+        myFirebaseRef = new Firebase("https://popping-inferno-1042.firebaseio.com/")
+                .child(intent.getStringExtra("NAME"));
+
+        myFirebaseRef.child("NAME").setValue(intent.getStringExtra("NAME"));
+        myFirebaseRef.child("AIRLINE").setValue(intent.getStringExtra("AIRLINE"));
+        myFirebaseRef.child("FLIGHTNUM").setValue(intent.getStringExtra("FLIGHTNUM"));
+        myFirebaseRef.child("DEPARTURE").setValue(intent.getStringExtra("DEPARTURE"));
+        myFirebaseRef.child("DESTINATION").setValue(intent.getStringExtra("DESTINATION"));
+
     }
 
     @Override
@@ -102,12 +114,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         double lat = location.getLatitude();
         double lon = location.getLongitude();
 
-        //Log.d("Location Update", "Latitude: " + lat + " Longitude: " + lon);
-        Log.d("Shaken:", ""+shaken);
-        if (!shaken) {
-            locationObject.put("lat", lat);
-            locationObject.put("lon", lon);
-            locationObject.saveInBackground();
+        if (shaken) {
+            myFirebaseRef.child("lon").setValue(lon);
+            myFirebaseRef.child("lat").setValue(lat);
         }
+
+
     }
 }
